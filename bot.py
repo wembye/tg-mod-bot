@@ -199,7 +199,7 @@ async def auto_moderate(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 # ── Main ─────────────────────────────────────────────────────────────────────
 def main():
-    token = os.environ.get("BOT_TOKEN", "")
+    token = "8511371551:AAH3J7LFuZv-C9rrwKOCb0K867zN3xPScE0"
 
     app = Application.builder().token(token).build()
 
