@@ -121,7 +121,7 @@ async def ban_user(update: Update, context: ContextTypes.DEFAULT_TYPE):
         parse_mode="HTML"
     )
 
-async def unban_user(update: Update, context: ContextTypes.DEFAULT_INDEX):
+async def unban_user(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not await is_admin(update, context):
         await update.message.reply_text("❌ Только для администраторов.")
         return
