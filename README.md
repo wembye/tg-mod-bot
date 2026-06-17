@@ -1,25 +1,47 @@
 # Telegram Moderation Bot
 
-A production-ready Telegram group moderation bot built with Python and `python-telegram-bot` v20.
+A production-ready Telegram group moderation bot built with Python and `python-telegram-bot` v20. Supports Russian and English, with a fully configurable admin panel.
 
 ## Features
 
-- **Auto-spam detection** — automatically deletes messages containing spam links/keywords
-- **Warning system** — 3 warnings trigger an automatic ban
-- **Admin commands** — `/warn`, `/ban`, `/unban`, `/warns`, `/stats`
-- **Persistent storage** — warning counts saved to JSON across restarts
-- **Message logging** — tracks total messages processed per group
+- 🌐 **Bilingual** — Russian / English, switchable per group
+- ⚠️ **Warning system** — 3 warnings trigger automatic ban
+- 🔇 **Timed mute** — mute users for any number of minutes
+- 🚫 **Anti-spam** — detects spam keywords + duplicate links (same link twice in 60 sec = auto-mute)
+- 🌊 **Anti-flood** — 6+ messages in 5 seconds = auto-mute
+- 🤬 **Custom word filter** — add/remove any words via commands, violations = auto-mute
+- 🔗 **Link blocking** — toggle to allow or block all links in the group
+- 👋 **Captcha** — new members must press a button within 60 sec or get kicked
+- ⚙️ **Settings panel** — inline keyboard for admins to configure everything
+- 🕹️ **Configurable mute durations** — set mute time separately for spam, flood, and word filter
 
-## Commands
+## Commands (prefix `!`)
 
 | Command | Description | Access |
-|--------|-------------|--------|
-| `/start` | Show help menu | Everyone |
-| `/warn` | Warn a user (reply to message) | Admins only |
-| `/ban` | Ban a user (reply to message) | Admins only |
-| `/unban` | Unban a user (reply to message) | Admins only |
-| `/warns` | Check user's warning count | Everyone |
-| `/stats` | Group statistics | Everyone |
+|---------|-------------|--------|
+| `!warn` | Warn a user (reply to message) | Admins |
+| `!ban` | Ban a user (reply to message) | Admins |
+| `!unban` | Unban a user (reply to message) | Admins |
+| `!mute 10` | Mute for N minutes (reply to message) | Admins |
+| `!unmute` | Remove mute (reply to message) | Admins |
+| `!warns` | Check warning count (reply to message) | Everyone |
+| `!stats` | Group statistics | Everyone |
+| `!addword слово` | Add word to filter | Admins |
+| `!delword слово` | Remove word from filter | Admins |
+| `!words` | List all filtered words | Admins |
+| `!settings` | Open settings panel | Admins |
+| `!start` | Show help / choose language | Everyone |
+
+## Settings Panel (`!settings`)
+
+- 🌐 Switch language (RU / EN)
+- ✅/❌ Word filter on/off
+- ✅/❌ Anti-flood on/off
+- ✅/❌ Captcha for new members on/off
+- 🔗 Links: allowed / blocked
+- ⏱ Mute duration for spam (1/5/10/20/30/60 min)
+- ⏱ Mute duration for flood (1/5/10/20/30/60 min)
+- ⏱ Mute duration for word filter (1/5/10/20/30/60 min)
 
 ## Setup
 
@@ -29,27 +51,23 @@ A production-ready Telegram group moderation bot built with Python and `python-t
    pip install -r requirements.txt
    ```
 3. Get a bot token from [@BotFather](https://t.me/BotFather)
-4. Set environment variable:
-   ```bash
-   export BOT_TOKEN=your_token_here
+4. Set your token in `bot.py`:
+   ```python
+   BOT_TOKEN = "your_token_here"
    ```
 5. Run:
    ```bash
    python bot.py
    ```
 
-## Deployment
+## Deployment (Docker)
 
-Can be deployed on any VPS, Railway, Render, or as a Docker container.
-
-```dockerfile
-FROM python:3.11-slim
-WORKDIR /app
-COPY requirements.txt .
-RUN pip install -r requirements.txt
-COPY . .
-CMD ["python", "bot.py"]
+```bash
+docker build -t tg-mod-bot .
+docker run -d tg-mod-bot
 ```
+
+Or deploy instantly on [Railway](https://railway.app) by connecting this repo.
 
 ## Tech Stack
 
@@ -57,3 +75,4 @@ CMD ["python", "bot.py"]
 - python-telegram-bot 20.7 (async)
 - JSON file storage
 - Telegram Bot API
+- Docker-ready
