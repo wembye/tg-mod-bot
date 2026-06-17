@@ -46,7 +46,7 @@ TEXTS = {
             "`!words` — список слов фильтра\n"
             "`!settings` — настройки группы\n\n"
             "*Автомодерация:*\n"
-            "🔸 Антиспам (дубли ссылок = мут)\n🔸 Антифлуд\n🔸 Фильтр слов\n🔸 Капча для новых"
+            "🔸 Антиспам (дубли ссылок = мут)\n🔸 Антифлуд\n🔸 Фильтр слов\n🔸 Капча для новых\n🔸 Блокировка ссылок"
         ),
         "admin_only": "❌ Только для администраторов.",
         "reply_needed": "↩️ Ответьте на сообщение пользователя.",
@@ -73,6 +73,8 @@ TEXTS = {
         "word_not_found": "❌ Слово не найдено в фильтре.",
         "words_list": "📋 *Слова фильтра:*\n{words}",
         "words_empty": "📋 Фильтр слов пуст.",
+        "links_blocked": "🔗 Ссылки заблокированы в этой группе.",
+        "link_deleted": "🔗 Сообщение от {user} удалено (ссылки запрещены).",
     },
     "en": {
         "start": (
@@ -90,7 +92,7 @@ TEXTS = {
             "`!words` — list filtered words\n"
             "`!settings` — group settings\n\n"
             "*Auto-moderation:*\n"
-            "🔸 Anti-spam (duplicate links = mute)\n🔸 Anti-flood\n🔸 Word filter\n🔸 Captcha for new members"
+            "🔸 Anti-spam (duplicate links = mute)\n🔸 Anti-flood\n🔸 Word filter\n🔸 Captcha for new members\n🔸 Link blocking"
         ),
         "admin_only": "❌ Admins only.",
         "reply_needed": "↩️ Reply to a user message.",
@@ -117,6 +119,8 @@ TEXTS = {
         "word_not_found": "❌ Word not found in filter.",
         "words_list": "📋 *Filtered words:*\n{words}",
         "words_empty": "📋 Word filter is empty.",
+        "links_blocked": "🔗 Links are blocked in this group.",
+        "link_deleted": "🔗 Message from {user} deleted (links are banned).",
     }
 }
 
@@ -133,7 +137,7 @@ def get_settings(chat_id: str) -> dict:
     if chat_id not in s:
         s[chat_id] = {
             "lang": "ru", "profanity_filter": True, "antiflood": True,
-            "captcha": True, "mute_spam": 20, "mute_flood": 5, "mute_words": 10,
+            "captcha": True, "block_links": False, "mute_spam": 20, "mute_flood": 5, "mute_words": 10,
             "custom_words": []
         }
     return s[chat_id]
@@ -377,6 +381,7 @@ async def send_settings_menu(chat_id_int: int, context, chat_id: str, message_id
         [InlineKeyboardButton(f"{on('profanity_filter')} {L('Фильтр слов','Word filter')}", callback_data=f"set_profanity_{chat_id}")],
         [InlineKeyboardButton(f"{on('antiflood')} {L('Антифлуд','Anti-flood')}", callback_data=f"set_flood_{chat_id}")],
         [InlineKeyboardButton(f"{on('captcha')} {L('Капча','Captcha')}", callback_data=f"set_captcha_{chat_id}")],
+        [InlineKeyboardButton(f"{'🚫' if s.get('block_links', False) else '🔗'} {L('Ссылки','Links')}: {L('запрещены','blocked') if s.get('block_links', False) else L('разрешены','allowed')}", callback_data=f"set_links_{chat_id}")],
         [
             InlineKeyboardButton(f"⏱ {L('Спам','Spam')}: {s.get('mute_spam',20)}м", callback_data=f"mutecfg_spam_{chat_id}"),
             InlineKeyboardButton(f"⏱ {L('Флуд','Flood')}: {s.get('mute_flood',5)}м", callback_data=f"mutecfg_flood_{chat_id}"),
@@ -417,6 +422,8 @@ async def settings_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         cid = d[10:]; s = get_settings(cid); s["antiflood"] = not s.get("antiflood", True); save_data(data)
     elif d.startswith("set_captcha_"):
         cid = d[12:]; s = get_settings(cid); s["captcha"] = not s.get("captcha", True); save_data(data)
+    elif d.startswith("set_links_"):
+        cid = d[10:]; s = get_settings(cid); s["block_links"] = not s.get("block_links", False); save_data(data)
 
     elif d.startswith("mutecfg_"):
         parts = d.split("_"); mtype = parts[1]; cid = "_".join(parts[2:])
@@ -574,6 +581,22 @@ async def auto_moderate(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     text = update.message.text or update.message.caption or ""
 
+    # Block all links if enabled
+    if s.get("block_links", False):
+        has_link = any(x in text.lower() for x in ["http://", "https://", "t.me/", "www."])
+        if has_link:
+            try:
+                await update.message.delete()
+                await context.bot.send_message(
+                    update.effective_chat.id,
+                    t(chat_id, "link_deleted", user=user.mention_html()),
+                    parse_mode="HTML"
+                )
+            except Exception as e:
+                logger.error(f"Link block error: {e}")
+            save_data(data)
+            return
+
     # Duplicate link check → immediate mute
     if check_duplicate_link(chat_id, user_id, text):
         mins = s.get("mute_spam", 20)
@@ -648,7 +671,7 @@ def main():
 
     app.add_handler(CallbackQueryHandler(lang_callback, pattern="^lang_"))
     app.add_handler(CallbackQueryHandler(captcha_callback, pattern="^captcha_"))
-    app.add_handler(CallbackQueryHandler(settings_callback, pattern="^(set_|mutecfg_|setmute_)"))
+    app.add_handler(CallbackQueryHandler(settings_callback, pattern="^(set_|mutecfg_|setmute_|set_links_)"))
 
     app.add_handler(MessageHandler(filters.StatusUpdate.NEW_CHAT_MEMBERS, new_member))
     app.add_handler(MessageHandler(filters.ALL & ~filters.COMMAND, auto_moderate))
