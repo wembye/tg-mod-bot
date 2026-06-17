@@ -221,6 +221,28 @@ async def do_mute(context, chat_id_int: int, user_id: int, mins: int):
 
 # ── /start ────────────────────────────────────────────────────────────────────
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    # Private chat → show instructions
+    if update.effective_chat.type == "private":
+        await update.message.reply_text(
+            "🛡 *ModBot — бот для модерации групп*\n\n"
+            "Чтобы бот заработал:\n\n"
+            "1️⃣ Добавь бота в свою группу\n"
+            "2️⃣ Сделай его *администратором* (с правами бана, удаления сообщений, ограничения участников)\n"
+            "3️⃣ Напиши `!start` в группе чтобы выбрать язык\n"
+            "4️⃣ Напиши `!settings` в группе чтобы настроить бота\n\n"
+            "⚠️ Настройки доступны только администраторам группы.\n\n"
+            "———\n\n"
+            "🛡 *ModBot — group moderation bot*\n\n"
+            "To get started:\n\n"
+            "1️⃣ Add the bot to your group\n"
+            "2️⃣ Make it *admin* (with ban, delete, restrict permissions)\n"
+            "3️⃣ Type `!start` in the group to choose language\n"
+            "4️⃣ Type `!settings` in the group to configure the bot\n\n"
+            "⚠️ Settings are available to group admins only.",
+            parse_mode="Markdown"
+        )
+        return
+    # Group chat → language selector
     kb = InlineKeyboardMarkup([[
         InlineKeyboardButton("🇷🇺 Русский", callback_data="lang_ru"),
         InlineKeyboardButton("🇬🇧 English", callback_data="lang_en"),
