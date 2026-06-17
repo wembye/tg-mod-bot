@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ModBot Settings</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--tg-theme-bg-color, #1a1a2e);
+    color: var(--tg-theme-text-color, #eee);
+    min-height: 100vh;
+    padding: 16px;
+  }
+
+  .header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 24px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+  }
+
+  .header .icon { font-size: 28px; }
+  .header h1 { font-size: 20px; font-weight: 700; }
+  .header p { font-size: 13px; opacity: 0.6; margin-top: 2px; }
+
+  .section {
+    background: var(--tg-theme-secondary-bg-color, rgba(255,255,255,0.05));
+    border-radius: 14px;
+    overflow: hidden;
+    margin-bottom: 16px;
+  }
+
+  .section-title {
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    opacity: 0.5;
+    padding: 12px 16px 6px;
+  }
+
+  .row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 16px;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+    gap: 12px;
+  }
+  .row:last-child { border-bottom: none; }
+
+  .row-left { flex: 1; }
+  .row-label { font-size: 15px; font-weight: 500; }
+  .row-desc { font-size: 12px; opacity: 0.5; margin-top: 2px; }
+
+  /* Toggle */
+  .toggle { position: relative; width: 50px; height: 28px; flex-shrink: 0; }
+  .toggle input { opacity: 0; width: 0; height: 0; }
+  .slider {
+    position: absolute; inset: 0;
+    background: rgba(255,255,255,0.15);
+    border-radius: 14px;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  .slider:before {
+    content: '';
+    position: absolute;
+    width: 22px; height: 22px;
+    left: 3px; top: 3px;
+    background: white;
+    border-radius: 50%;
+    transition: transform 0.2s;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+  }
+  input:checked + .slider { background: #4CAF50; }
+  input:checked + .slider:before { transform: translateX(22px); }
+
+  /* Mute selector */
+  .mute-options {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-top: 4px;
+  }
+  .mute-btn {
+    padding: 5px 12px;
+    border-radius: 20px;
+    border: 1px solid rgba(255,255,255,0.2);
+    background: transparent;
+    color: var(--tg-theme-text-color, #eee);
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .mute-btn.active {
+    background: var(--tg-theme-button-color, #2196F3);
+    border-color: transparent;
+    color: white;
+    font-weight: 600;
+  }
+
+  /* Word filter */
+  .word-input-row {
+    display: flex;
+    gap: 8px;
+    padding: 12px 16px;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+  }
+  .word-input {
+    flex: 1;
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 10px;
+    padding: 8px 12px;
+    color: var(--tg-theme-text-color, #eee);
+    font-size: 14px;
+    outline: none;
+  }
+  .word-input:focus { border-color: var(--tg-theme-button-color, #2196F3); }
+  .add-btn {
+    background: var(--tg-theme-button-color, #2196F3);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    padding: 8px 16px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  .words-list { padding: 8px 16px 12px; }
+  .word-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(255,255,255,0.08);
+    border-radius: 20px;
+    padding: 4px 10px 4px 12px;
+    margin: 4px 4px 0 0;
+    font-size: 13px;
+  }
+  .word-tag .del {
+    background: rgba(255,80,80,0.3);
+    border: none;
+    color: #ff6b6b;
+    border-radius: 50%;
+    width: 18px; height: 18px;
+    font-size: 12px;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+
+  /* Lang selector */
+  .lang-row {
+    display: flex;
+    gap: 8px;
+    padding: 12px 16px;
+  }
+  .lang-btn {
+    flex: 1;
+    padding: 10px;
+    border-radius: 10px;
+    border: 1px solid rgba(255,255,255,0.15);
+    background: transparent;
+    color: var(--tg-theme-text-color, #eee);
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.15s;
+    text-align: center;
+  }
+  .lang-btn.active {
+    background: var(--tg-theme-button-color, #2196F3);
+    border-color: transparent;
+    color: white;
+    font-weight: 600;
+  }
+
+  /* Save button */
+  .save-btn {
+    width: 100%;
+    padding: 15px;
+    background: var(--tg-theme-button-color, #2196F3);
+    color: white;
+    border: none;
+    border-radius: 14px;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    margin-top: 8px;
+    transition: opacity 0.2s;
+  }
+  .save-btn:active { opacity: 0.8; }
+
+  .error {
+    text-align: center;
+    padding: 40px 20px;
+    opacity: 0.6;
+  }
+  .error .icon { font-size: 48px; margin-bottom: 12px; }
+  .error p { font-size: 15px; line-height: 1.5; }
+
+  .loading {
+    text-align: center;
+    padding: 60px 20px;
+    opacity: 0.5;
+    font-size: 15px;
+  }
+
+  .toast {
+    position: fixed;
+    bottom: 24px; left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: #4CAF50;
+    color: white;
+    padding: 10px 24px;
+    border-radius: 20px;
+    font-size: 14px;
+    font-weight: 600;
+    opacity: 0;
+    transition: all 0.3s;
+    pointer-events: none;
+    white-space: nowrap;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+
+<div id="app"><div class="loading">⏳ Загрузка...</div></div>
+<div class="toast" id="toast"></div>
+
+<script>
+const tg = window.Telegram.WebApp;
+tg.ready();
+tg.expand();
+
+// Get chat_id from URL params
+const params = new URLSearchParams(window.location.search);
+const chatId = params.get('chat_id');
+const BASE = window.location.origin;
+
+let settings = {};
+
+function showToast(msg, color = '#4CAF50') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.style.background = color;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+async function loadSettings() {
+  if (!chatId) {
+    renderError('Откройте настройки через команду !settings в группе.');
+    return;
+  }
+  try {
+    const res = await fetch(`${BASE}/api/settings?chat_id=${chatId}`);
+    if (!res.ok) throw new Error('Ошибка загрузки');
+    settings = await res.json();
+    render();
+  } catch(e) {
+    renderError('Не удалось загрузить настройки. Попробуйте ещё раз.');
+  }
+}
+
+async function saveSettings() {
+  try {
+    const res = await fetch(`${BASE}/api/settings`, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ chat_id: chatId, settings })
+    });
+    if (!res.ok) throw new Error();
+    showToast('✅ Сохранено!');
+    setTimeout(() => tg.close(), 1500);
+  } catch(e) {
+    showToast('❌ Ошибка сохранения', '#f44336');
+  }
+}
+
+function toggle(key) {
+  settings[key] = !settings[key];
+  render();
+}
+
+function setMute(key, val) {
+  settings[key] = val;
+  render();
+}
+
+function setLang(lang) {
+  settings.lang = lang;
+  render();
+}
+
+function addWord() {
+  const inp = document.getElementById('word-input');
+  const word = inp.value.trim().toLowerCase();
+  if (!word) return;
+  if (!settings.custom_words) settings.custom_words = [];
+  if (!settings.custom_words.includes(word)) {
+    settings.custom_words.push(word);
+    render();
+  }
+  inp.value = '';
+}
+
+function removeWord(word) {
+  settings.custom_words = settings.custom_words.filter(w => w !== word);
+  render();
+}
+
+const MUTE_OPTIONS = [1, 5, 10, 20, 30, 60];
+
+function renderError(msg) {
+  document.getElementById('app').innerHTML = `
+    <div class="error">
+      <div class="icon">🔒</div>
+      <p>${msg}</p>
+    </div>`;
+}
+
+function render() {
+  const s = settings;
+  const isRu = s.lang !== 'en';
+  const L = (ru, en) => isRu ? ru : en;
+
+  function toggleRow(label, desc, key) {
+    return `
+      <div class="row">
+        <div class="row-left">
+          <div class="row-label">${label}</div>
+          ${desc ? `<div class="row-desc">${desc}</div>` : ''}
+        </div>
+        <label class="toggle">
+          <input type="checkbox" ${s[key] ? 'checked' : ''} onchange="toggle('${key}')">
+          <span class="slider"></span>
+        </label>
+      </div>`;
+  }
+
+  function muteRow(label, key) {
+    return `
+      <div class="row" style="flex-direction:column; align-items:flex-start;">
+        <div class="row-label" style="margin-bottom:8px;">${label}</div>
+        <div class="mute-options">
+          ${MUTE_OPTIONS.map(o => `
+            <button class="mute-btn ${s[key]===o?'active':''}" onclick="setMute('${key}',${o})">${o}м</button>
+          `).join('')}
+        </div>
+      </div>`;
+  }
+
+  const words = s.custom_words || [];
+
+  document.getElementById('app').innerHTML = `
+    <div class="header">
+      <div class="icon">🛡</div>
+      <div>
+        <h1>ModBot</h1>
+        <p>${L('Настройки группы', 'Group Settings')}</p>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">${L('Язык', 'Language')}</div>
+      <div class="lang-row">
+        <button class="lang-btn ${s.lang==='ru'?'active':''}" onclick="setLang('ru')">🇷🇺 Русский</button>
+        <button class="lang-btn ${s.lang==='en'?'active':''}" onclick="setLang('en')">🇬🇧 English</button>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">${L('Автомодерация', 'Auto-moderation')}</div>
+      ${toggleRow(
+        L('Антифлуд', 'Anti-flood'),
+        L('6+ сообщений за 5 сек = мут', '6+ messages in 5 sec = mute'),
+        'antiflood'
+      )}
+      ${toggleRow(
+        L('Фильтр слов', 'Word filter'),
+        L('Удаляет сообщения с запрещёнными словами', 'Deletes messages with banned words'),
+        'profanity_filter'
+      )}
+      ${toggleRow(
+        L('Капча для новых', 'Captcha for new members'),
+        L('Нажать кнопку в течение 60 сек или кик', 'Press button in 60 sec or get kicked'),
+        'captcha'
+      )}
+      ${toggleRow(
+        L('Блокировать ссылки', 'Block links'),
+        L('Удалять все сообщения со ссылками', 'Delete all messages with links'),
+        'block_links'
+      )}
+    </div>
+
+    <div class="section">
+      <div class="section-title">${L('Время мута', 'Mute duration')}</div>
+      ${muteRow(L('⏱ За спам (повторные ссылки)', '⏱ Spam (duplicate links)'), 'mute_spam')}
+      ${muteRow(L('⏱ За флуд', '⏱ Flood'), 'mute_flood')}
+      ${muteRow(L('⏱ За запрещённые слова', '⏱ Banned words'), 'mute_words')}
+    </div>
+
+    <div class="section">
+      <div class="section-title">${L('Фильтр слов', 'Word filter')}</div>
+      <div class="word-input-row">
+        <input class="word-input" id="word-input" placeholder="${L('Добавить слово...', 'Add word...')}"
+          onkeydown="if(event.key==='Enter') addWord()">
+        <button class="add-btn" onclick="addWord()">+</button>
+      </div>
+      <div class="words-list">
+        ${words.length === 0
+          ? `<div style="opacity:0.4;font-size:13px;">${L('Список пуст', 'List is empty')}</div>`
+          : words.map(w => `
+            <span class="word-tag">
+              ${w}
+              <button class="del" onclick="removeWord('${w}')">×</button>
+            </span>`).join('')
+        }
+      </div>
+    </div>
+
+    <button class="save-btn" onclick="saveSettings()">
+      ${L('💾 Сохранить', '💾 Save')}
+    </button>
+  `;
+}
+
+loadSettings();
+</script>
+</body>
+</html>
